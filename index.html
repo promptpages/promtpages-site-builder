@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>promptpageco — AI site builder (API test)</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#666; --line:#ddd; --accent:#111; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; color: var(--ink); }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  p.sub { color: var(--muted); margin-top: 0; font-size: .95rem; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
+  label { display: block; font-size: .85rem; font-weight: 600; margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; padding: 9px 10px; font-size: .95rem; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; }
+  textarea { resize: vertical; }
+  .row { display: flex; gap: 10px; }
+  .row > div { flex: 1; }
+  button { margin-top: 14px; padding: 11px 20px; font-size: 1rem; background: var(--accent); color: #fff; border: 0; border-radius: 8px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: wait; }
+  #status { margin-top: 10px; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
+  .tabs { margin-top: 18px; display: flex; gap: 8px; }
+  .tab { background: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: .9rem; }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  iframe { width: 100%; height: 480px; border: 1px solid var(--line); border-radius: 8px; margin-top: 12px; background: #fff; }
+  pre { display: none; background: #f6f6f6; border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow: auto; max-height: 480px; font-size: .78rem; margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
+  .copy { margin-top: 8px; background: none; border: 1px solid var(--line); color: var(--ink); padding: 6px 12px; font-size: .85rem; }
+  .hint { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+  .warn { background: #fff7e6; border: 1px solid #f0d9a8; border-radius: 8px; padding: 10px 12px; font-size: .85rem; margin-top: 14px; }
+</style>
+</head>
+<body>
+  <h1>promptpageco — AI site builder</h1>
+  <p class="sub">Type a prompt, get a complete website. Works with Groq or OpenRouter (Qwen / Llama / any model).</p>
+
+  <div class="warn">
+    <strong>Heads up:</strong> this page calls the API from your browser, so your key is visible to anyone who opens the page. Use it for testing only — for paid client sites we'll hide the key on a backend.
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Provider</label>
+        <select id="provider">
+          <option value="groq">Groq</option>
+          <option value="openrouter">OpenRouter</option>
+        </select>
+      </div>
+      <div>
+        <label>Model</label>
+        <input id="model" value="qwen3-32b" placeholder="e.g. qwen3-32b">
+      </div>
+    </div>
+    <p class="hint">Groq: qwen3-32b · OpenRouter: qwen/qwen3-32b or meta-llama/llama-3.3-70b-instruct:free</p>
+
+    <label>API key</label>
+    <input id="key" type="password" placeholder="Paste your Groq or OpenRouter API key" autocomplete="off">
+
+    <label>Describe the website</label>
+    <textarea id="prompt" rows="3" placeholder="e.g. A food truck website with a menu page, contact info, and a bright modern look"></textarea>
+
+    <button id="go">Build my site</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-preview">Preview</button>
+    <button class="tab" id="tab-code">Code</button>
+    <button class="copy" id="copy">Copy code</button>
+  </div>
+  <iframe id="preview" sandbox="allow-scripts"></iframe>
+  <pre id="code"></pre>
+
+<script>
+const SYSTEM = "You are a professional web designer and developer. The user will describe a website they want. Respond with ONLY a complete, self-contained single-file HTML website (one <html> document with embedded <style> and <script>). Use modern, clean design: good typography, a nice color scheme, responsive layout. Do not include any explanation, markdown fences, or text outside the HTML.";
+
+const ENDPOINTS = {
+  groq: "https://api.groq.com/openai/v1/chat/completions",
+  openrouter: "https://openrouter.ai/api/v1/chat/completions"
+};
+
+const $ = id => document.getElementById(id);
+const status = $('status');
+const preview = $('preview');
+const codeEl = $('code');
+
+$('provider').onchange = () => {
+  const p = $('provider').value;
+  $('model').value = p === 'groq' ? 'qwen3-32b' : 'qwen/qwen3-32b';
+};
+
+$('go').onclick = async () => {
+  const provider = $('provider').value;
+  const model = $('model').value.trim();
+  const key = $('key').value.trim();
+  const prompt = $('prompt').value.trim();
+  if (!key) { status.textContent = 'Paste your API key first.'; return; }
+  if (!prompt) { status.textContent = 'Describe the website first.'; return; }
+  $('go').disabled = true;
+  status.textContent = 'Building... (usually 10-40 seconds)';
+  try {
+    const res = await fetch(ENDPOINTS[provider], {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+        ...(provider === 'openrouter' ? { 'HTTP-Referer': location.href, 'X-Title': 'promptpageco test' } : {})
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: SYSTEM },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error((data.error && (data.error.message || data.error)) || 'HTTP ' + res.status);
+    let html = data.choices[0].message.content.trim();
+    if (html.startsWith('```')) {
+      html = html.split('```')[1] || html;
+      if (html.startsWith('html')) html = html.slice(4);
+      html = html.trim();
+    }
+    preview.srcdoc = html;
+    codeEl.textContent = html;
+    status.textContent = 'Done! ' + html.length.toLocaleString() + ' characters of HTML. Copy it, save as index.html, push to GitHub.';
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  } finally {
+    $('go').disabled = false;
+  }
+};
+
+$('copy').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(codeEl.textContent);
+    $('copy').textContent = 'Copied!';
+    setTimeout(() => $('copy').textContent = 'Copy code', 1500);
+  } catch (e) {
+    status.textContent = 'Copy failed — select the code manually.';
+  }
+};
+
+$('tab-preview').onclick = () => { preview.style.display = 'block'; codeEl.style.display = 'none'; $('tab-preview').classList.add('active'); $('tab-code').classList.remove('active'); };
+$('tab-code').onclick = () => { preview.style.display = 'none'; codeEl.style.display = 'block'; $('tab-code').classList.add('active'); $('tab-preview').classList.remove('active'); };
+</script>
+</body>
+</html>
