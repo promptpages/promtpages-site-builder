@@ -31,7 +31,7 @@
 </head>
 <body>
   <h1>promptpageco — AI site builder</h1>
-  <p class="sub">Type a prompt, get a complete website. Works with Groq or OpenRouter (Qwen / Llama / any model).</p>
+  <p class="sub">Type a prompt, get a complete website. Works with Groq, OpenRouter, or Ollama Cloud (Qwen / Llama / any model).</p>
 
   <div class="warn">
     <strong>Heads up:</strong> this page calls the API from your browser, so your key is visible to anyone who opens the page. Use it for testing only — for paid client sites we'll hide the key on a backend.
@@ -44,6 +44,7 @@
         <select id="provider">
           <option value="groq">Groq</option>
           <option value="openrouter">OpenRouter</option>
+          <option value="ollama-cloud">Ollama Cloud</option>
         </select>
       </div>
       <div>
@@ -51,10 +52,10 @@
         <input id="model" value="qwen3-32b" placeholder="e.g. qwen3-32b">
       </div>
     </div>
-    <p class="hint">Groq: qwen3-32b · OpenRouter: qwen/qwen3-32b or meta-llama/llama-3.3-70b-instruct:free</p>
+    <p class="hint">Groq: qwen3-32b · OpenRouter: qwen/qwen3-32b:free · Ollama Cloud: gpt-oss:120b</p>
 
     <label>API key</label>
-    <input id="key" type="password" placeholder="Paste your Groq or OpenRouter API key" autocomplete="off">
+    <input id="key" type="password" placeholder="Paste your provider API key" autocomplete="off">
 
     <label>Describe the website</label>
     <textarea id="prompt" rows="3" placeholder="e.g. A food truck website with a menu page, contact info, and a bright modern look"></textarea>
@@ -76,7 +77,8 @@ const SYSTEM = "You are a professional web designer and developer. The user will
 
 const ENDPOINTS = {
   groq: "https://api.groq.com/openai/v1/chat/completions",
-  openrouter: "https://openrouter.ai/api/v1/chat/completions"
+  openrouter: "https://openrouter.ai/api/v1/chat/completions",
+  "ollama-cloud": "https://ollama.com/api/chat"
 };
 
 const $ = id => document.getElementById(id);
@@ -86,7 +88,7 @@ const codeEl = $('code');
 
 $('provider').onchange = () => {
   const p = $('provider').value;
-  $('model').value = p === 'groq' ? 'qwen3-32b' : 'qwen/qwen3-32b';
+  $('model').value = p === 'groq' ? 'qwen3-32b' : p === 'openrouter' ? 'qwen/qwen3-32b:free' : 'gpt-oss:120b';
 };
 
 $('go').onclick = async () => {
@@ -106,7 +108,14 @@ $('go').onclick = async () => {
         'Authorization': 'Bearer ' + key,
         ...(provider === 'openrouter' ? { 'HTTP-Referer': location.href, 'X-Title': 'promptpageco test' } : {})
       },
-      body: JSON.stringify({
+      body: JSON.stringify(provider === 'ollama-cloud' ? {
+        model,
+        messages: [
+          { role: 'system', content: SYSTEM },
+          { role: 'user', content: prompt }
+        ],
+        stream: false
+      } : {
         model,
         messages: [
           { role: 'system', content: SYSTEM },
@@ -117,7 +126,7 @@ $('go').onclick = async () => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error((data.error && (data.error.message || data.error)) || 'HTTP ' + res.status);
-    let html = data.choices[0].message.content.trim();
+    let html = (provider === 'ollama-cloud' ? data.message.content : data.choices[0].message.content).trim();
     if (html.startsWith('```')) {
       html = html.split('```')[1] || html;
       if (html.startsWith('html')) html = html.slice(4);
