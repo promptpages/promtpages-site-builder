@@ -3,159 +3,188 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>promptpageco — AI site builder (API test)</title>
+<title>promptpageco — Maroon AI workspace</title>
 <style>
-  :root { --ink:#1a1a1a; --muted:#666; --line:#ddd; --accent:#111; }
+  :root { --ink:#1a1a1a; --muted:#666; --line:#ddd; --accent:#111; --red:#d00000; --soft:#f7f7f7; }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; color: var(--ink); }
-  h1 { font-size: 1.5rem; margin-bottom: 4px; }
-  p.sub { color: var(--muted); margin-top: 0; font-size: .95rem; }
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 1040px; margin: 0 auto; padding: 22px 16px 60px; color: var(--ink); background: #fff; }
+  h1 { font-size: 1.55rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  p.sub { color: var(--muted); margin: 0; font-size: .95rem; }
+  .migel-warning { color: var(--red); font-size: clamp(1.55rem, 5vw, 2.45rem); font-weight: 900; text-align: center; margin: 0 0 18px; }
   .card { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; }
-  label { display: block; font-size: .85rem; font-weight: 600; margin: 12px 0 4px; }
-  input, select, textarea { width: 100%; padding: 9px 10px; font-size: .95rem; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; }
+  .setup { background: #fff8e8; border-color: #e9d29b; }
+  label { display: block; font-size: .85rem; font-weight: 650; margin: 12px 0 4px; }
+  input, select, textarea { width: 100%; padding: 9px 10px; font-size: .95rem; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; background: white; }
   textarea { resize: vertical; }
   .row { display: flex; gap: 10px; }
   .row > div { flex: 1; }
-  button { margin-top: 14px; padding: 11px 20px; font-size: 1rem; background: var(--accent); color: #fff; border: 0; border-radius: 8px; cursor: pointer; }
+  button { margin-top: 12px; padding: 10px 17px; font-size: .95rem; background: var(--accent); color: #fff; border: 0; border-radius: 8px; cursor: pointer; }
+  button.secondary { background: white; color: var(--ink); border: 1px solid var(--line); }
+  button.danger { background: #8b0000; }
   button:disabled { opacity: .5; cursor: wait; }
-  #status { margin-top: 10px; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
-  .tabs { margin-top: 18px; display: flex; gap: 8px; }
-  .tab { background: none; border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: .9rem; }
-  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .hint, .small { font-size: .8rem; color: var(--muted); }
+  .status { margin-top: 10px; font-size: .88rem; color: var(--muted); min-height: 1.2em; }
+  .hidden { display: none !important; }
+  .auth-actions, .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .user { font-size: .85rem; color: var(--muted); margin-left: auto; }
+  .modes { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  .mode { white-space: nowrap; background: white; color: var(--ink); border: 1px solid var(--line); }
+  .mode.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chat { min-height: 170px; max-height: 480px; overflow-y: auto; background: var(--soft); border: 1px solid var(--line); border-radius: 9px; padding: 12px; }
+  .msg { max-width: 92%; border-radius: 10px; padding: 10px 12px; margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.user { margin-left: auto; background: #111; color: #fff; }
+  .msg.assistant { background: #fff; border: 1px solid var(--line); }
+  .empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 36px 10px; }
+  pre { display: none; background: #f6f6f6; border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow: auto; max-height: 500px; font-size: .78rem; margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
   iframe { width: 100%; height: 480px; border: 1px solid var(--line); border-radius: 8px; margin-top: 12px; background: #fff; }
-  pre { display: none; background: #f6f6f6; border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow: auto; max-height: 480px; font-size: .78rem; margin-top: 12px; white-space: pre-wrap; word-break: break-word; }
-  .copy { margin-top: 8px; background: none; border: 1px solid var(--line); color: var(--ink); padding: 6px 12px; font-size: .85rem; }
-  .hint { font-size: .8rem; color: var(--muted); margin-top: 4px; }
-  .migel-warning { color: #d00000; font-size: 2rem; font-weight: 900; text-align: center; margin: 0 0 18px; }
-  .warn { background: #fff7e6; border: 1px solid #f0d9a8; border-radius: 8px; padding: 10px 12px; font-size: .85rem; margin-top: 14px; }
+  .warning { background: #fff1f1; border: 1px solid #efb5b5; border-radius: 8px; padding: 10px 12px; font-size: .84rem; margin-top: 14px; }
+  .success { color: #176b35; }
+  .error { color: #a00000; }
 </style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="migel-warning">Migel if you leak ts 😔👋💥</div>
-  <h1>promptpageco — AI site builder</h1>
-  <p class="sub">Type a prompt, get a complete website. Works with Groq, OpenRouter, or Ollama Cloud (Qwen / Llama / any model).</p>
+  <h1>promptpageco — Maroon AI workspace</h1>
+  <p class="sub">Chat, vibe-code websites, create files, and work with GitHub or GitLab.</p>
 
-  <div class="warn">
-    <strong>Heads up:</strong> this page calls the API from your browser, so your key is visible to anyone who opens the page. Use it for testing only — for paid client sites we'll hide the key on a backend.
+  <div id="setupCard" class="card setup hidden">
+    <h2>Supabase setup needed</h2>
+    <p class="small">Add a public config.js file beside index.html with the two public Supabase values. Never put model API keys or a Supabase service-role key in this file.</p>
+    <pre style="display:block">window.PROMPTPAGECO_CONFIG = {
+  supabaseUrl: "your-project-url",
+  supabaseAnonKey: "your-publishable-or-anon-key"
+};</pre>
+    <p class="small">The app will still show the AI workspace, but login and saved chat memory stay disabled until Supabase is configured.</p>
   </div>
 
   <div class="card">
-    <div class="row">
-      <div>
-        <label>Provider</label>
-        <select id="provider">
-          <option value="groq">Groq</option>
-          <option value="openrouter">OpenRouter</option>
-          <option value="ollama-cloud">Ollama Cloud</option>
-        </select>
+    <h2>Account</h2>
+    <div id="signedOut">
+      <div class="row">
+        <div><label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+        <div><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="10+ characters, upper/lowercase, number, symbol"></div>
       </div>
-      <div>
-        <label>Model</label>
-        <input id="model" value="qwen3-32b" placeholder="e.g. qwen3-32b">
+      <div class="auth-actions">
+        <button id="signIn">Sign in</button>
+        <button id="signUp" class="secondary">Create account</button>
+        <button id="google" class="secondary">Continue with Google</button>
       </div>
+      <div id="authStatus" class="status"></div>
     </div>
-    <p class="hint">Groq: qwen3-32b · OpenRouter: qwen/qwen3-32b:free · Ollama Cloud: gpt-oss:120b</p>
-
-    <label>API key</label>
-    <input id="key" type="password" placeholder="Paste your provider API key" autocomplete="off">
-
-    <label>Describe the website</label>
-    <textarea id="prompt" rows="3" placeholder="e.g. A food truck website with a menu page, contact info, and a bright modern look"></textarea>
-
-    <button id="go">Build my site</button>
-    <div id="status"></div>
+    <div id="signedIn" class="hidden toolbar">
+      <span id="userLabel" class="user"></span>
+      <button id="signOut" class="secondary">Sign out</button>
+      <button id="deleteMemory" class="danger">Delete my saved chats</button>
+    </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" id="tab-preview">Preview</button>
-    <button class="tab" id="tab-code">Code</button>
-    <button class="copy" id="copy">Copy code</button>
+  <div class="card">
+    <div class="modes" role="tablist" aria-label="Workspace mode">
+      <button class="mode active" data-mode="chat">v1.1 Chat Maroon</button>
+      <button class="mode" data-mode="website">Website Mode</button>
+      <button class="mode" data-mode="file">File Coder</button>
+      <button class="mode" data-mode="classic">Classic Code</button>
+    </div>
+    <div class="row">
+      <div><label for="provider">Provider</label><select id="provider"><option value="openrouter">OpenRouter</option><option value="ollama-cloud">Ollama Cloud</option><option value="groq">Groq</option></select></div>
+      <div><label for="model">Model</label><input id="model" value="qwen/qwen3-32b:free"></div>
+    </div>
+    <label for="key">Testing-mode API key</label>
+    <input id="key" type="password" autocomplete="off" placeholder="Only needed until a secure backend is connected">
+    <p class="hint">This browser key is visible to the page. For friends, connect a backend that stores the key in server secrets.</p>
+    <div id="chat" class="chat"><div class="empty">Sign in to save chat memory, or send a test message without an account.</div></div>
+    <label for="prompt">Message</label>
+    <textarea id="prompt" rows="4" placeholder="Ask a question or describe the website/file/code you want"></textarea>
+    <div class="toolbar"><button id="send">Send</button><button id="download" class="secondary hidden">Download result</button><span id="status" class="status"></span></div>
+    <iframe id="preview" class="hidden" sandbox="allow-scripts"></iframe>
+    <pre id="code"></pre>
   </div>
-  <iframe id="preview" sandbox="allow-scripts"></iframe>
-  <pre id="code"></pre>
 
 <script>
-const SYSTEM = "You are a professional web designer and developer. The user will describe a website they want. Respond with ONLY a complete, self-contained single-file HTML website (one <html> document with embedded <style> and <script>). Use modern, clean design: good typography, a nice color scheme, responsive layout. Do not include any explanation, markdown fences, or text outside the HTML.";
-
-const ENDPOINTS = {
-  groq: "https://api.groq.com/openai/v1/chat/completions",
-  openrouter: "https://openrouter.ai/api/v1/chat/completions",
-  "ollama-cloud": "https://ollama.com/api/chat"
-};
-
+const cfg = window.PROMPTPAGECO_CONFIG || {};
+const SUPABASE_URL = cfg.supabaseUrl || '';
+const SUPABASE_ANON_KEY = cfg.supabaseAnonKey || '';
+const supabase = SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const $ = id => document.getElementById(id);
-const status = $('status');
-const preview = $('preview');
-const codeEl = $('code');
+let mode = 'chat';
+let messages = [];
 
-$('provider').onchange = () => {
-  const p = $('provider').value;
-  $('model').value = p === 'groq' ? 'qwen3-32b' : p === 'openrouter' ? 'qwen/qwen3-32b:free' : 'gpt-oss:120b';
+const SYSTEMS = {
+  chat: 'You are v1.1 Chat Maroon, a helpful general-purpose assistant. Answer clearly and directly.',
+  website: 'You are v1.1 Maroon Code in Website Mode. Return only a complete self-contained HTML website with embedded CSS and JavaScript. Do not use markdown fences or explanations.',
+  file: 'You are v1.1 Maroon Code in File Coder mode. Return the requested file content only, with no explanation or markdown fences. If the requested binary format cannot be produced in a browser-only workflow, say so briefly and provide the closest text source.',
+  classic: 'You are v1.1 Maroon Code in Classic Code mode. Help build GitHub, GitLab, webhooks, embeds, and developer projects. Return practical code and concise setup notes.'
 };
 
-$('go').onclick = async () => {
-  const provider = $('provider').value;
-  const model = $('model').value.trim();
-  const key = $('key').value.trim();
-  const prompt = $('prompt').value.trim();
-  if (!key) { status.textContent = 'Paste your API key first.'; return; }
-  if (!prompt) { status.textContent = 'Describe the website first.'; return; }
-  $('go').disabled = true;
-  status.textContent = 'Building... (usually 10-40 seconds)';
-  try {
-    const res = await fetch(ENDPOINTS[provider], {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key,
-        ...(provider === 'openrouter' ? { 'HTTP-Referer': location.href, 'X-Title': 'promptpageco test' } : {})
-      },
-      body: JSON.stringify(provider === 'ollama-cloud' ? {
-        model,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: prompt }
-        ],
-        stream: false
-      } : {
-        model,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error((data.error && (data.error.message || data.error)) || 'HTTP ' + res.status);
-    let html = (provider === 'ollama-cloud' ? data.message.content : data.choices[0].message.content).trim();
-    if (html.startsWith('```')) {
-      html = html.split('```')[1] || html;
-      if (html.startsWith('html')) html = html.slice(4);
-      html = html.trim();
-    }
-    preview.srcdoc = html;
-    codeEl.textContent = html;
-    status.textContent = 'Done! ' + html.length.toLocaleString() + ' characters of HTML. Copy it, save as index.html, push to GitHub.';
-  } catch (e) {
-    status.textContent = 'Error: ' + e.message;
-  } finally {
-    $('go').disabled = false;
-  }
-};
-
-$('copy').onclick = async () => {
-  try {
-    await navigator.clipboard.writeText(codeEl.textContent);
-    $('copy').textContent = 'Copied!';
-    setTimeout(() => $('copy').textContent = 'Copy code', 1500);
-  } catch (e) {
-    status.textContent = 'Copy failed — select the code manually.';
-  }
-};
-
-$('tab-preview').onclick = () => { preview.style.display = 'block'; codeEl.style.display = 'none'; $('tab-preview').classList.add('active'); $('tab-code').classList.remove('active'); };
-$('tab-code').onclick = () => { preview.style.display = 'none'; codeEl.style.display = 'block'; $('tab-code').classList.add('active'); $('tab-preview').classList.remove('active'); };
+function setStatus(text, kind='') { $('status').textContent = text; $('status').className = 'status ' + kind; }
+function authStatus(text, kind='') { $('authStatus').textContent = text; $('authStatus').className = 'status ' + kind; }
+function validPassword(p) { return p.length >= 10 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) && /[^A-Za-z0-9]/.test(p); }
+function renderMessages() {
+  const box = $('chat');
+  if (!messages.length) { box.innerHTML = '<div class="empty">No saved messages yet. Start a conversation.</div>'; return; }
+  box.innerHTML = messages.map(m => '<div class="msg ' + (m.role === 'user' ? 'user' : 'assistant') + '">' + escapeHtml(m.content) + '</div>').join('');
+  box.scrollTop = box.scrollHeight;
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+async function saveMessage(role, content) {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { error } = await supabase.from('chat_messages').insert({ user_id: user.id, role, content, mode });
+  if (error) setStatus('Chat was not saved: ' + error.message, 'error');
+}
+async function loadMessages() {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) { messages = []; renderMessages(); return; }
+  const { data, error } = await supabase.from('chat_messages').select('role,content,created_at').eq('user_id', user.id).order('created_at', { ascending: true }).limit(200);
+  if (error) { setStatus('Could not load saved chats: ' + error.message, 'error'); return; }
+  messages = data || []; renderMessages();
+}
+async function updateAuth() {
+  if (!supabase) { $('setupCard').classList.remove('hidden'); $('signedOut').classList.remove('hidden'); $('signedIn').classList.add('hidden'); return; }
+  $('setupCard').classList.add('hidden');
+  const { data: { session } } = await supabase.auth.getSession();
+  $('signedOut').classList.toggle('hidden', !!session);
+  $('signedIn').classList.toggle('hidden', !session);
+  if (session) { $('userLabel').textContent = session.user.email || 'Signed in'; await loadMessages(); }
+  else { messages = []; renderMessages(); }
+}
+async function callModel(userPrompt) {
+  const provider = $('provider').value, model = $('model').value.trim(), key = $('key').value.trim();
+  if (!key) throw new Error('Add a testing-mode API key, or connect a backend first.');
+  const endpoint = provider === 'ollama-cloud' ? 'https://ollama.com/api/chat' : provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://openrouter.ai/api/v1/chat/completions';
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+  if (provider === 'openrouter') { headers['HTTP-Referer'] = location.href; headers['X-Title'] = 'promptpageco'; }
+  const body = provider === 'ollama-cloud' ? { model, stream: false, messages: [{role:'system',content:SYSTEMS[mode]}, {role:'user',content:userPrompt}] } : { model, messages: [{role:'system',content:SYSTEMS[mode]}, {role:'user',content:userPrompt}], temperature: .7 };
+  const res = await fetch(endpoint, { method:'POST', headers, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error((data.error && (data.error.message || data.error)) || 'HTTP ' + res.status);
+  return (provider === 'ollama-cloud' ? data.message.content : data.choices[0].message.content).trim().replace(/^```(?:html|javascript|js|text)?\s*/i,'').replace(/```$/,'').trim();
+}
+function applyOutput(text) {
+  $('code').textContent = text; $('code').style.display = 'block'; $('download').classList.remove('hidden');
+  if (mode === 'website') { $('preview').srcdoc = text; $('preview').classList.remove('hidden'); }
+  else $('preview').classList.add('hidden');
+}
+function downloadOutput() {
+  const ext = mode === 'website' ? 'html' : mode === 'file' ? 'txt' : 'txt';
+  const blob = new Blob([$('code').textContent], {type:'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = mode === 'website' ? 'index.html' : 'maroon-output.' + ext; a.click(); URL.revokeObjectURL(a.href);
+}
+$('provider').onchange = () => { const p = $('provider').value; $('model').value = p === 'ollama-cloud' ? 'gpt-oss:120b' : p === 'groq' ? 'qwen3-32b' : 'qwen/qwen3-32b:free'; };
+document.querySelectorAll('.mode').forEach(btn => btn.onclick = () => { document.querySelectorAll('.mode').forEach(b => b.classList.remove('active')); btn.classList.add('active'); mode = btn.dataset.mode; $('prompt').placeholder = mode === 'chat' ? 'Ask a normal question' : mode === 'website' ? 'Describe the website to build' : mode === 'file' ? 'Describe the downloadable file content' : 'Describe the GitHub, GitLab, webhook, embed, or code task'; });
+$('send').onclick = async () => { const text = $('prompt').value.trim(); if (!text) { setStatus('Write a message first.', 'error'); return; } $('send').disabled = true; setStatus('Working...'); try { messages.push({role:'user',content:text}); renderMessages(); await saveMessage('user', text); const answer = await callModel(text); messages.push({role:'assistant',content:answer}); renderMessages(); applyOutput(answer); await saveMessage('assistant', answer); setStatus('Done.', 'success'); $('prompt').value = ''; } catch (e) { setStatus('Error: ' + e.message, 'error'); } finally { $('send').disabled = false; } };
+$('download').onclick = downloadOutput;
+$('signUp').onclick = async () => { if (!supabase) return authStatus('Add Supabase config.js first.', 'error'); const email = $('email').value.trim(), password = $('password').value; if (!email || !validPassword(password)) return authStatus('Use a password with 10+ characters, uppercase, lowercase, a number, and a symbol.', 'error'); const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.href } }); authStatus(error ? error.message : 'Account created. Check your email if confirmation is enabled.', error ? 'error' : 'success'); };
+$('signIn').onclick = async () => { if (!supabase) return authStatus('Add Supabase config.js first.', 'error'); const { error } = await supabase.auth.signInWithPassword({ email:$('email').value.trim(), password:$('password').value }); authStatus(error ? error.message : 'Signed in.', error ? 'error' : 'success'); if (!error) await updateAuth(); };
+$('google').onclick = async () => { if (!supabase) return authStatus('Add Supabase config.js first.', 'error'); const { error } = await supabase.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:location.href } }); if (error) authStatus(error.message, 'error'); };
+$('signOut').onclick = async () => { await supabase.auth.signOut(); await updateAuth(); };
+$('deleteMemory').onclick = async () => { if (!supabase || !confirm('Delete all of your saved chats?')) return; const { data:{user} } = await supabase.auth.getUser(); const { error } = await supabase.from('chat_messages').delete().eq('user_id', user.id); if (error) setStatus(error.message, 'error'); else { messages=[]; renderMessages(); setStatus('Saved chats deleted.', 'success'); } };
+if (supabase) supabase.auth.onAuthStateChange(() => updateAuth());
+updateAuth();
 </script>
 </body>
 </html>
